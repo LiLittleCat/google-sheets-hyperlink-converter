@@ -11,6 +11,38 @@ function log(...args) {
 // 全局状态
 let isSidebarVisible = false;
 
+// 语言设置
+let currentLang = 'en'; // 默认使用英文
+
+// 获取语言设置
+async function getLanguageSetting() {
+    try {
+        const result = await chrome.storage.sync.get('language');
+        if (result.language) {
+            return result.language;
+        }
+        
+        // 如果没有存储的语言设置，则根据浏览器语言设置
+        const browserLang = navigator.language.toLowerCase();
+        if (browserLang === 'zh-cn') {
+            return 'zh';
+        }
+        return 'en';
+    } catch (error) {
+        console.error('获取语言设置失败:', error);
+        return 'en';
+    }
+}
+
+// 保存语言设置
+async function saveLanguageSetting(lang) {
+    try {
+        await chrome.storage.sync.set({ language: lang });
+    } catch (error) {
+        console.error('保存语言设置失败:', error);
+    }
+}
+
 // 添加样式
 const styles = `
     #link-formatter-button {
@@ -110,6 +142,16 @@ const styles = `
         padding: 20px;
         flex-grow: 1;
         overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+        height: calc(100vh - 60px);
+    }
+    .main-content {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+        min-height: 0;
     }
     #link-formatter-sidebar textarea {
         width: 100%;
@@ -149,10 +191,57 @@ const styles = `
         color: #666;
         font-size: 14px;
     }
+    .language-group {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 8px;
+        padding: 8px 0;
+        margin-top: 20px;
+        border-top: 1px solid #eee;
+    }
+    .language-group label {
+        color: #666;
+        font-size: 12px;
+        margin: 0;
+    }
+    .language-group select {
+        padding: 4px 8px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        font-size: 12px;
+        background: white;
+        cursor: pointer;
+        min-width: 80px;
+    }
+    .language-group select:hover {
+        border-color: #4285f4;
+    }
 `;
 
+// 更新UI文本
+function updateUIText() {
+    // 更新扩展按钮的标题
+    const toggleButton = document.querySelector('#link-formatter-toggle');
+    if (toggleButton) {
+        toggleButton.title = i18n[currentLang]['title'];
+    }
+
+    // 更新侧边栏标题和其他文本
+    document.querySelector('#sidebar-title').textContent = i18n[currentLang]['title'];
+    document.querySelector('#input-label').textContent = i18n[currentLang]['inputLabel'];
+    document.querySelector('#input-url').placeholder = i18n[currentLang]['inputPlaceholder'];
+    document.querySelector('#output-label').textContent = i18n[currentLang]['outputLabel'];
+    document.querySelector('#output-formula').placeholder = i18n[currentLang]['outputPlaceholder'];
+    document.querySelector('#copy-button').textContent = i18n[currentLang]['copyButton'];
+    document.querySelector('#language-label').textContent = i18n[currentLang]['language'];
+}
+
 // 创建UI
-function createUI() {
+async function createUI() {
+    // 获取语言设置
+    currentLang = await getLanguageSetting();
+    
     // 添加样式
     const styleSheet = document.createElement('style');
     styleSheet.textContent = styles;
@@ -162,7 +251,7 @@ function createUI() {
     const toggleButton = document.createElement('div');
     toggleButton.id = 'link-formatter-toggle';
     toggleButton.innerHTML = '<span class="icon">‹</span>';
-    toggleButton.title = 'Google Sheet 链接格式化工具';
+    toggleButton.title = i18n[currentLang]['title'];
     document.body.appendChild(toggleButton);
 
     // 创建侧边栏
@@ -170,20 +259,29 @@ function createUI() {
     sidebar.id = 'link-formatter-sidebar';
     sidebar.innerHTML = `
         <div id="link-formatter-sidebar-header">
-            <h3>Google Sheet 链接格式化工具</h3>
+            <h3 id="sidebar-title">${i18n[currentLang]['title']}</h3>
             <span id="link-formatter-close">×</span>
         </div>
         <div id="link-formatter-sidebar-content">
-            <div class="input-group">
-                <label class="input-label">输入链接</label>
-                <textarea id="input-url" placeholder="在此粘贴链接..."></textarea>
+            <div class="main-content">
+                <div class="input-group">
+                    <label id="input-label" class="input-label">${i18n[currentLang]['inputLabel']}</label>
+                    <textarea id="input-url" placeholder="${i18n[currentLang]['inputPlaceholder']}"></textarea>
+                </div>
+                <div class="input-group">
+                    <label id="output-label" class="input-label">${i18n[currentLang]['outputLabel']}</label>
+                    <textarea id="output-formula" placeholder="${i18n[currentLang]['outputPlaceholder']}" readonly></textarea>
+                </div>
+                <button id="copy-button">${i18n[currentLang]['copyButton']}</button>
+                <div class="status" id="status-message"></div>
             </div>
-            <div class="input-group">
-                <label class="input-label">转换结果</label>
-                <textarea id="output-formula" placeholder="转换后的格式..." readonly></textarea>
+            <div class="language-group">
+                <label id="language-label" class="input-label">${i18n[currentLang]['language']}</label>
+                <select id="language-select">
+                    <option value="zh">中文</option>
+                    <option value="en">English</option>
+                </select>
             </div>
-            <button id="copy-button">复制到剪贴板</button>
-            <div class="status" id="status-message"></div>
         </div>
     `;
     document.body.appendChild(sidebar);
@@ -215,18 +313,30 @@ function createUI() {
         toggleSidebar(false);
     });
 
+    // 添加语言选择事件监听
+    const languageSelect = sidebar.querySelector('#language-select');
+    languageSelect.value = currentLang;
+    languageSelect.addEventListener('change', async (e) => {
+        currentLang = e.target.value;
+        await saveLanguageSetting(currentLang);
+        updateUIText();
+    });
+
+    // 初始化UI文本
+    updateUIText();
+
     // 输入框监听
     inputArea.addEventListener('input', () => {
         const url = inputArea.value.trim();
         if (isValidUrl(url)) {
-            statusMessage.textContent = '正在获取页面标题...';
+            updateStatusMessage('statusProcessing');
             processUrl(url, (formula) => {
                 outputArea.value = formula;
-                statusMessage.textContent = '转换完成';
+                updateStatusMessage('statusComplete');
             });
         } else {
             outputArea.value = '';
-            statusMessage.textContent = url ? '请输入有效的URL' : '';
+            updateStatusMessage(url ? 'statusInvalidUrl' : '');
         }
     });
 
@@ -235,9 +345,9 @@ function createUI() {
         const formula = outputArea.value;
         if (formula) {
             navigator.clipboard.writeText(formula).then(() => {
-                statusMessage.textContent = '已复制到剪贴板';
+                updateStatusMessage('statusCopied');
                 setTimeout(() => {
-                    statusMessage.textContent = '';
+                    updateStatusMessage('');
                 }, 2000);
             });
         }
@@ -399,6 +509,14 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     }
     return true; // 保持消息通道开启
 });
+
+// 修改状态消息更新函数
+function updateStatusMessage(message) {
+    const statusMessage = document.querySelector('#status-message');
+    if (statusMessage) {
+        statusMessage.textContent = i18n[currentLang][message] || message;
+    }
+}
 
 // 初始化
 if (isTargetSite(window.location.href)) {

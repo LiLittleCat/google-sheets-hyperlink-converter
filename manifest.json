@@ -1,11 +1,12 @@
 {
   "manifest_version": 3,
-  "name": "Google Sheets 链接格式化工具",
+  "name": "Google Sheets 超链接转换工具",
   "version": "1.0",
-  "description": "将网页链接转换为 Google Sheets 超链接格式",
+  "description": "将网页链接转换为 Google Sheets 超链接公式格式",
   "permissions": [
     "activeTab",
-    "scripting"
+    "scripting",
+    "storage"
   ],
   "host_permissions": [
     "<all_urls>"
@@ -15,7 +16,7 @@
       "48": "icon48.png",
       "128": "icon128.png"
     },
-    "default_title": "Google Sheets 链接格式化工具"
+    "default_title": "Google Sheets 超链接转换工具"
   },
   "background": {
     "service_worker": "background.js"
@@ -23,7 +24,7 @@
   "content_scripts": [
     {
       "matches": ["*://docs.google.com/spreadsheets/*"],
-      "js": ["content.js"]
+      "js": ["i18n.js", "content.js"]
     }
   ],
   "icons": {
