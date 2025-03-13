@@ -70,8 +70,8 @@ const styles = `
     #link-formatter-sidebar {
         position: fixed;
         top: 0;
-        right: -350px;
-        width: 350px;
+        right: -400px;
+        width: 400px;
         height: 100vh;
         background: white;
         box-shadow: -2px 0 10px rgba(0,0,0,0.1);
@@ -79,6 +79,7 @@ const styles = `
         transition: right 0.3s ease;
         display: flex;
         flex-direction: column;
+        box-sizing: border-box;
     }
     #link-formatter-sidebar.visible {
         right: 0;
@@ -111,7 +112,7 @@ const styles = `
         transition: transform 0.3s ease;
     }
     #link-formatter-toggle.expanded {
-        right: 350px;
+        right: 400px;
     }
     #link-formatter-toggle.expanded .icon {
         transform: rotate(180deg);
@@ -128,12 +129,16 @@ const styles = `
         margin: 0;
         color: #333;
         font-size: 16px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
     }
     #link-formatter-close {
         cursor: pointer;
         font-size: 20px;
         color: #666;
         padding: 5px;
+        margin-left: 10px;
     }
     #link-formatter-close:hover {
         color: #333;
@@ -145,6 +150,7 @@ const styles = `
         display: flex;
         flex-direction: column;
         height: calc(100vh - 60px);
+        box-sizing: border-box;
     }
     .main-content {
         flex: 1;
@@ -162,6 +168,7 @@ const styles = `
         resize: vertical;
         min-height: 80px;
         font-size: 14px;
+        box-sizing: border-box;
     }
     #link-formatter-sidebar button {
         background: #4285f4;
@@ -172,6 +179,7 @@ const styles = `
         cursor: pointer;
         font-size: 14px;
         width: 100%;
+        box-sizing: border-box;
     }
     #link-formatter-sidebar button:hover {
         background: #3367d6;
@@ -189,7 +197,7 @@ const styles = `
     .input-label {
         display: block;
         margin-bottom: 5px;
-        color: #666;
+        color: #333;
         font-size: 14px;
     }
     .input-example {
@@ -198,6 +206,7 @@ const styles = `
         color: #888;
         font-size: 12px;
         font-family: monospace;
+        word-break: break-all;
     }
     .error-message {
         color: #d93025;
