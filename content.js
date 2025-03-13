@@ -1,7 +1,7 @@
 'use strict';
 
 // 调试日志
-const DEBUG = true;
+const DEBUG = false;
 function log(...args) {
     if (DEBUG) {
         console.log('[链接格式化]', ...args);

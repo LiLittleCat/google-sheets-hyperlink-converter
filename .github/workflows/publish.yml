@@ -1,0 +1,25 @@
+name: Create Release Asset
+
+on:
+  release:
+    types: [created]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Create ZIP file
+        run: |
+          zip -r google-sheets-hyperlink-converter-${{ github.event.release.tag_name }}.zip . -x "*.git*" "*.github*" "README*.md"
+      
+      - name: Upload Release Asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ github.event.release.upload_url }}
+          asset_path: ./google-sheets-hyperlink-converter-${{ github.event.release.tag_name }}.zip
+          asset_name: google-sheets-hyperlink-converter-${{ github.event.release.tag_name }}.zip
+          asset_content_type: application/zip 

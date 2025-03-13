@@ -3,6 +3,11 @@
   "name": "Google Sheets 超链接转换工具",
   "version": "1.0",
   "description": "将网页链接转换为 Google Sheets 超链接公式格式",
+  "author": {
+    "name": "Yi Liu",
+    "email": "hi@yiliu.dev",
+    "url": "https://github.com/LiLittleCat/google-sheets-hyperlink-converter"
+  },
   "permissions": [
     "activeTab",
     "scripting",
