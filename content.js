@@ -184,6 +184,7 @@ const styles = `
     }
     .input-group {
         margin-bottom: 20px;
+        position: relative;
     }
     .input-label {
         display: block;
@@ -197,6 +198,18 @@ const styles = `
         color: #888;
         font-size: 12px;
         font-family: monospace;
+    }
+    .error-message {
+        color: #d93025;
+        font-size: 12px;
+        margin-top: 4px;
+        display: none;
+    }
+    .input-error textarea {
+        border-color: #d93025 !important;
+    }
+    .input-error .error-message {
+        display: block;
     }
     .language-group {
         display: flex;
@@ -244,6 +257,13 @@ function updateUIText() {
     document.querySelector('#output-formula').placeholder = i18n[currentLang]['outputPlaceholder'];
     document.querySelector('#copy-button').textContent = i18n[currentLang]['copyButton'];
     document.querySelector('#language-label').textContent = i18n[currentLang]['language'];
+
+    // 如果当前有错误提示，更新错误提示文本
+    const inputGroup = document.querySelector('.input-group');
+    const inputError = document.querySelector('#input-error');
+    if (inputGroup.classList.contains('input-error') && inputError.textContent) {
+        inputError.textContent = i18n[currentLang]['statusInvalidUrl'];
+    }
 }
 
 // 创建UI
@@ -277,6 +297,7 @@ async function createUI() {
                     <label id="input-label" class="input-label">${i18n[currentLang]['inputLabel']}</label>
                     <div id="input-example" class="input-example">${i18n[currentLang]['inputExample']}</div>
                     <textarea id="input-url" placeholder="${i18n[currentLang]['inputPlaceholder']}"></textarea>
+                    <div class="error-message" id="input-error"></div>
                 </div>
                 <div class="input-group">
                     <label id="output-label" class="input-label">${i18n[currentLang]['outputLabel']}</label>
@@ -347,7 +368,11 @@ async function createUI() {
             });
         } else {
             outputArea.value = '';
-            updateStatusMessage(url ? 'statusInvalidUrl' : '');
+            if (url) {
+                updateStatusMessage('statusInvalidUrl', true);
+            } else {
+                updateStatusMessage('');
+            }
         }
     });
 
@@ -522,10 +547,23 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 });
 
 // 修改状态消息更新函数
-function updateStatusMessage(message) {
+function updateStatusMessage(message, isError = false) {
     const statusMessage = document.querySelector('#status-message');
-    if (statusMessage) {
-        statusMessage.textContent = i18n[currentLang][message] || message;
+    const inputGroup = document.querySelector('.input-group');
+    const inputError = document.querySelector('#input-error');
+
+    if (isError) {
+        inputGroup.classList.add('input-error');
+        inputError.textContent = i18n[currentLang][message];
+        statusMessage.textContent = '';
+    } else {
+        inputGroup.classList.remove('input-error');
+        inputError.textContent = '';
+        if (message) {
+            statusMessage.textContent = i18n[currentLang][message];
+        } else {
+            statusMessage.textContent = '';
+        }
     }
 }
 
