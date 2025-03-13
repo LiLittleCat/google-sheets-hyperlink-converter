@@ -62,7 +62,7 @@ const styles = `
         border-radius: 4px 0 0 4px;
         box-shadow: -2px 0 5px rgba(0,0,0,0.1);
         cursor: pointer;
-        z-index: 9997;
+        z-index: 9999;
         display: flex;
         align-items: center;
         justify-content: center;
@@ -78,10 +78,10 @@ const styles = `
         transform: rotate(0deg);
         transition: transform 0.3s ease;
     }
-    #link-formatter-toggle.hidden {
-        right: -40px;
+    #link-formatter-toggle.expanded {
+        right: 350px;
     }
-    #link-formatter-toggle.hidden .icon {
+    #link-formatter-toggle.expanded .icon {
         transform: rotate(180deg);
     }
     #link-formatter-sidebar-header {
@@ -161,7 +161,7 @@ function createUI() {
     // 创建切换按钮
     const toggleButton = document.createElement('div');
     toggleButton.id = 'link-formatter-toggle';
-    toggleButton.innerHTML = '<span class="icon">›</span>';
+    toggleButton.innerHTML = '<span class="icon">‹</span>';
     toggleButton.title = '链接格式化工具';
     document.body.appendChild(toggleButton);
 
@@ -202,7 +202,7 @@ function createUI() {
         }
         isSidebarVisible = show;
         sidebar.classList.toggle('visible', show);
-        toggleButton.classList.toggle('hidden', show);
+        toggleButton.classList.toggle('expanded', show);
     }
 
     // 切换按钮点击事件
