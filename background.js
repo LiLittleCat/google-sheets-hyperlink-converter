@@ -14,11 +14,6 @@ function showNotification(title, message) {
     }
 }
 
-// 延迟函数
-function delay(ms) {
-    return new Promise(resolve => setTimeout(resolve, ms));
-}
-
 // 清理标题文本
 function cleanTitle(title) {
     if (!title) return null;
@@ -43,16 +38,8 @@ function extractTitleFromHtml(html) {
             if (title) return cleanTitle(title);
         }
         
-        // 尝试获取 twitter:title
-        const twitterTitleMatch = html.match(/<meta[^>]*?name=["']twitter:title["'][^>]*?content=["']([^"']+)["'][^>]*?>/i)
-            || html.match(/<meta[^>]*?content=["']([^"']+)["'][^>]*?name=["']twitter:title["'][^>]*?>/i);
-        if (twitterTitleMatch) {
-            title = twitterTitleMatch[1];
-            if (title) return cleanTitle(title);
-        }
-        
         // 尝试获取普通 title
-        const titleMatch = html.match(/<title[^>]*?>([^<]+)<\/title>/i);
+        const titleMatch = html.match(/<title[^>]*?>([^<]*(?:(?!<\/title>)<[^<]*)*)<\/title>/i);
         if (titleMatch) {
             title = titleMatch[1];
             if (title) return cleanTitle(title);
@@ -72,33 +59,48 @@ function extractTitleFromHtml(html) {
     }
 }
 
-// 获取标题的函数，包含重试逻辑
-async function fetchTitleWithRetry(url, maxRetries = 3, delayMs = 1000) {
-    for (let i = 0; i < maxRetries; i++) {
-        try {
-            const response = await fetch(url);
-            const html = await response.text();
-            
-            // 检查是否包含验证页面的特征
-            if (html.includes('环境异常') || html.includes('验证')) {
-                console.log(`第 ${i + 1} 次尝试: 页面需要验证，等待重试...`);
-                await delay(delayMs);
-                continue;
+// 获取标题的函数
+async function fetchTitle(url) {
+    try {
+        // 先尝试从 API 获取
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 10000); // 10秒超时
+        
+        const apiResponse = await fetch(`https://metafy.vercel.app/api?url=${encodeURIComponent(url)}`, {
+            signal: controller.signal,
+            headers: {
+                'Accept': 'application/json'
             }
-            
-            const title = extractTitleFromHtml(html);
-            if (title) {
-                return title.replace(/[\n\r\t]/g, ' ').replace(/\s+/g, ' ');
+        });
+        
+        if (apiResponse.ok) {
+            const metadata = await apiResponse.json();
+            clearTimeout(timeoutId);
+            if (metadata.title) {
+                return cleanTitle(metadata.title);
             }
-            
-            console.log(`第 ${i + 1} 次尝试: 未找到标题，等待重试...`);
-            await delay(delayMs);
-        } catch (error) {
-            console.error(`第 ${i + 1} 次尝试失败:`, error);
-            await delay(delayMs);
         }
+        
+        // 如果 API 获取失败，尝试直接获取页面
+        const response = await fetch(url, { signal: controller.signal });
+        const html = await response.text();
+        clearTimeout(timeoutId);
+        
+        return extractTitleFromHtml(html);
+    } catch (error) {
+        console.error('获取标题失败:', error);
+        // 如果是超时错误，尝试直接获取页面
+        if (error.name === 'AbortError') {
+            try {
+                const response = await fetch(url);
+                const html = await response.text();
+                return extractTitleFromHtml(html);
+            } catch (e) {
+                console.error('备用方案获取标题失败:', e);
+            }
+        }
+        return null;
     }
-    return null;
 }
 
 // 监听来自内容脚本的消息
@@ -108,10 +110,9 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         return false;
     }
     if (request.action === 'fetchTitle') {
-        // 使用 Promise 包装异步操作
         (async () => {
             try {
-                const title = await fetchTitleWithRetry(request.url);
+                const title = await fetchTitle(request.url);
                 sendResponse({ title: title, status: 'complete' });
             } catch (error) {
                 console.error('获取标题失败:', error);
