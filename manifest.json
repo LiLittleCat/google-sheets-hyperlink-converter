@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "链接格式化工具",
+  "name": "Google Sheets 链接格式化工具",
   "version": "1.0",
-  "description": "将网页链接转换为 Excel HYPERLINK 公式格式",
+  "description": "将网页链接转换为 Google Sheets 超链接格式",
   "permissions": [
     "activeTab",
     "scripting"
@@ -15,7 +15,7 @@
       "48": "icon48.png",
       "128": "icon128.png"
     },
-    "default_title": "链接格式化工具"
+    "default_title": "Google Sheets 链接格式化工具"
   },
   "background": {
     "service_worker": "background.js"
