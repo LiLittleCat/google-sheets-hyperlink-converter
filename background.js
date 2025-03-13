@@ -94,24 +94,22 @@ async function fetchTitleWithRetry(url, maxRetries = 3, delayMs = 1000) {
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     if (request.type === 'notification') {
         showNotification(request.title, request.message);
+        return false;
     }
     if (request.action === 'fetchTitle') {
-        // 立即发送一个初始响应
-        sendResponse({ title: null, status: 'pending' });
-        
-        // 开始获取标题的过程
-        fetchTitleWithRetry(request.url)
-            .then(title => {
-                // 通过新的消息将标题发送回内容脚本
-                chrome.tabs.sendMessage(sender.tab.id, {
-                    action: 'titleResult',
-                    url: request.url,
-                    title: title
-                });
-            });
-        
-        return false; // 不需要保持消息通道开启，因为我们使用新的消息
+        // 使用 Promise 包装异步操作
+        (async () => {
+            try {
+                const title = await fetchTitleWithRetry(request.url);
+                sendResponse({ title: title, status: 'complete' });
+            } catch (error) {
+                console.error('获取标题失败:', error);
+                sendResponse({ title: null, status: 'error' });
+            }
+        })();
+        return true; // 保持消息通道开启
     }
+    return false;
 });
 
 // 监听插件图标点击事件

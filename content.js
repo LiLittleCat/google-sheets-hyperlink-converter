@@ -162,7 +162,7 @@ function createUI() {
     const toggleButton = document.createElement('div');
     toggleButton.id = 'link-formatter-toggle';
     toggleButton.innerHTML = '<span class="icon">‹</span>';
-    toggleButton.title = '链接格式化工具';
+    toggleButton.title = 'Google Sheet 链接格式化工具';
     document.body.appendChild(toggleButton);
 
     // 创建侧边栏
@@ -170,7 +170,7 @@ function createUI() {
     sidebar.id = 'link-formatter-sidebar';
     sidebar.innerHTML = `
         <div id="link-formatter-sidebar-header">
-            <h3>链接格式化工具</h3>
+            <h3>Google Sheet 链接格式化工具</h3>
             <span id="link-formatter-close">×</span>
         </div>
         <div id="link-formatter-sidebar-content">
@@ -275,19 +275,40 @@ const pendingCallbacks = new Map();
 
 // 处理URL
 function processUrl(url, callback) {
-    // 存储回调
-    pendingCallbacks.set(url, callback);
-    
+    // 显示加载状态
+    const statusMessage = document.querySelector('#status-message');
+    if (statusMessage) {
+        statusMessage.textContent = '正在获取页面标题...';
+    }
+
     // 发送获取标题的请求
     chrome.runtime.sendMessage(
         { action: 'fetchTitle', url: url },
         response => {
-            if (response && response.status === 'pending') {
-                // 显示加载状态
-                const statusMessage = document.querySelector('#status-message');
+            if (chrome.runtime.lastError) {
+                console.error('获取标题失败:', chrome.runtime.lastError);
+                const title = url;
+                const formula = `=HYPERLINK("${url}","${title.replace(/"/g, '""')}")`;
+                callback(formula);
+                
                 if (statusMessage) {
-                    statusMessage.textContent = '正在获取页面标题...';
+                    statusMessage.textContent = '获取标题失败，使用链接作为标题';
+                    setTimeout(() => {
+                        statusMessage.textContent = '';
+                    }, 2000);
                 }
+                return;
+            }
+
+            const title = response && response.title ? response.title : url;
+            const formula = `=HYPERLINK("${url}","${title.replace(/"/g, '""')}")`;
+            callback(formula);
+            
+            if (statusMessage) {
+                statusMessage.textContent = '转换完成';
+                setTimeout(() => {
+                    statusMessage.textContent = '';
+                }, 2000);
             }
         }
     );
