@@ -19,6 +19,17 @@ function delay(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
 
+// 清理标题文本
+function cleanTitle(title) {
+    if (!title) return null;
+    return title
+        .trim()
+        .replace(/[\n\r\t]/g, ' ')  // 替换换行和制表符为空格
+        .replace(/\s+/g, ' ')       // 多个空格合并为一个
+        .replace(/[""]/g, '"')      // 统一引号格式
+        .replace(/'/g, "'");        // 统一撇号格式
+}
+
 // 从HTML中提取标题
 function extractTitleFromHtml(html) {
     try {
@@ -28,30 +39,30 @@ function extractTitleFromHtml(html) {
         const ogTitleMatch = html.match(/<meta[^>]*?property=["']og:title["'][^>]*?content=["']([^"']+)["'][^>]*?>/i) 
             || html.match(/<meta[^>]*?content=["']([^"']+)["'][^>]*?property=["']og:title["'][^>]*?>/i);
         if (ogTitleMatch) {
-            title = ogTitleMatch[1].trim();
-            if (title) return title;
+            title = ogTitleMatch[1];
+            if (title) return cleanTitle(title);
         }
         
         // 尝试获取 twitter:title
         const twitterTitleMatch = html.match(/<meta[^>]*?name=["']twitter:title["'][^>]*?content=["']([^"']+)["'][^>]*?>/i)
             || html.match(/<meta[^>]*?content=["']([^"']+)["'][^>]*?name=["']twitter:title["'][^>]*?>/i);
         if (twitterTitleMatch) {
-            title = twitterTitleMatch[1].trim();
-            if (title) return title;
+            title = twitterTitleMatch[1];
+            if (title) return cleanTitle(title);
         }
         
         // 尝试获取普通 title
-        const titleMatch = html.match(/<title[^>]*>([^<]+)<\/title>/i);
+        const titleMatch = html.match(/<title[^>]*?>([^<]+)<\/title>/i);
         if (titleMatch) {
-            title = titleMatch[1].trim();
-            if (title) return title;
+            title = titleMatch[1];
+            if (title) return cleanTitle(title);
         }
         
         // 尝试获取第一个 h1
-        const h1Match = html.match(/<h1[^>]*>([^<]+)<\/h1>/i);
+        const h1Match = html.match(/<h1[^>]*?>([^<]+)<\/h1>/i);
         if (h1Match) {
-            title = h1Match[1].trim();
-            if (title) return title;
+            title = h1Match[1];
+            if (title) return cleanTitle(title);
         }
         
         return null;

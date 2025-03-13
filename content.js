@@ -1,7 +1,7 @@
 'use strict';
 
 // 调试日志
-const DEBUG = false;
+const DEBUG = true;
 function log(...args) {
     if (DEBUG) {
         console.log('[链接格式化]', ...args);
@@ -492,39 +492,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         }
     }
 });
-
-// 提取网页标题
-function extractTitle(html) {
-    try {
-        const parser = new DOMParser();
-        const doc = parser.parseFromString(html, 'text/html');
-        
-        // 按优先级尝试不同的标题来源
-        const titleSources = [
-            doc.querySelector('title'),
-            doc.querySelector('meta[property="og:title"]'),
-            doc.querySelector('meta[name="twitter:title"]'),
-            doc.querySelector('h1')
-        ];
-
-        for (const source of titleSources) {
-            if (source) {
-                const title = source.tagName === 'TITLE' ? 
-                    source.textContent : 
-                    source.getAttribute('content');
-                    
-                if (title) {
-                    return title.trim()
-                        .replace(/[\n\r\t]/g, ' ')
-                        .replace(/\s+/g, ' ');
-                }
-            }
-        }
-    } catch (e) {
-        log('提取标题失败:', e);
-    }
-    return null;
-}
 
 // 检查是否是目标网站
 function isTargetSite(url) {
