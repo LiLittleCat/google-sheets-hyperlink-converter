@@ -270,29 +270,79 @@ function isValidUrl(url) {
     }
 }
 
+// 存储待处理的URL回调
+const pendingCallbacks = new Map();
+
 // 处理URL
 function processUrl(url, callback) {
-    fetch(url)
-        .then(response => response.text())
-        .then(html => {
-            const title = extractTitle(html) || url;
-            const formula = `=HYPERLINK("${url}","${title.replace(/"/g, '""')}")`;
-            callback(formula);
-        })
-        .catch(error => {
-            log('获取标题失败:', error);
-            const formula = `=HYPERLINK("${url}","${url}")`;
-            callback(formula);
-        });
+    // 存储回调
+    pendingCallbacks.set(url, callback);
+    
+    // 发送获取标题的请求
+    chrome.runtime.sendMessage(
+        { action: 'fetchTitle', url: url },
+        response => {
+            if (response && response.status === 'pending') {
+                // 显示加载状态
+                const statusMessage = document.querySelector('#status-message');
+                if (statusMessage) {
+                    statusMessage.textContent = '正在获取页面标题...';
+                }
+            }
+        }
+    );
 }
+
+// 监听来自background的标题结果
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+    if (message.action === 'titleResult') {
+        const callback = pendingCallbacks.get(message.url);
+        if (callback) {
+            const title = message.title || message.url;
+            const formula = `=HYPERLINK("${message.url}","${title.replace(/"/g, '""')}")`;
+            callback(formula);
+            
+            // 清除状态消息
+            const statusMessage = document.querySelector('#status-message');
+            if (statusMessage) {
+                statusMessage.textContent = '转换完成';
+                setTimeout(() => {
+                    statusMessage.textContent = '';
+                }, 2000);
+            }
+            
+            // 清除已处理的回调
+            pendingCallbacks.delete(message.url);
+        }
+    }
+});
 
 // 提取网页标题
 function extractTitle(html) {
     try {
-        const match = html.match(/<title[^>]*>([^<]+)<\/title>/);
-        if (match) {
-            const title = match[1].trim();
-            return title.replace(/[\n\r\t]/g, ' ').replace(/\s+/g, ' ');
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(html, 'text/html');
+        
+        // 按优先级尝试不同的标题来源
+        const titleSources = [
+            doc.querySelector('title'),
+            doc.querySelector('meta[property="og:title"]'),
+            doc.querySelector('meta[name="twitter:title"]'),
+            doc.querySelector('h1')
+        ];
+
+        for (const source of titleSources) {
+            if (source) {
+                const title = source.tagName === 'TITLE' ? 
+                    source.textContent : 
+                    source.getAttribute('content');
+                    
+                if (title) {
+                    return title.trim()
+                        .replace(/[\n\r\t]/g, ' ')
+                        .replace(/\s+/g, ' ');
+                }
+            }
         }
     } catch (e) {
         log('提取标题失败:', e);

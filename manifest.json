@@ -2,14 +2,12 @@
   "manifest_version": 3,
   "name": "链接格式化工具",
   "version": "1.0",
-  "description": "将链接转换为 Google Sheets 超链接格式",
+  "description": "将网页链接转换为 Excel HYPERLINK 公式格式",
   "permissions": [
-    "clipboardWrite",
     "activeTab",
-    "notifications"
+    "scripting"
   ],
   "host_permissions": [
-    "https://docs.google.com/spreadsheets/*",
     "<all_urls>"
   ],
   "action": {
@@ -24,7 +22,7 @@
   },
   "content_scripts": [
     {
-      "matches": ["https://docs.google.com/spreadsheets/*"],
+      "matches": ["*://docs.google.com/spreadsheets/*"],
       "js": ["content.js"]
     }
   ],
