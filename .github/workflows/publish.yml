@@ -3,6 +3,12 @@ name: Create Release Asset
 on:
   release:
     types: [created]
+  workflow_dispatch:
+    inputs:
+      tag_name:
+        description: '版本号 (例如: v1.0.0)'
+        required: true
+        type: string
 
 jobs:
   build:
@@ -12,12 +18,24 @@ jobs:
       
       - name: Create ZIP file
         run: |
-          zip -r google-sheets-hyperlink-converter-${{ github.event.release.tag_name }}.zip . -x "*.git*" "*.github*" "README*.md"
+          VERSION=${{ github.event.release.tag_name || github.event.inputs.tag_name }}
+          zip -r google-sheets-hyperlink-converter-$VERSION.zip . -x "*.git*" "*.github*" "README*.md"
       
-      - name: Upload Release Asset
+      - name: Create Release and Upload Asset (Manual)
+        if: github.event_name == 'workflow_dispatch'
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ github.event.inputs.tag_name }}
+          name: Release ${{ github.event.inputs.tag_name }}
+          files: google-sheets-hyperlink-converter-${{ github.event.inputs.tag_name }}.zip
+          draft: false
+          generate_release_notes: true
+      
+      - name: Upload Release Asset (Automatic)
+        if: github.event_name == 'release'
         uses: actions/upload-release-asset@v1
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ github.token }}
         with:
           upload_url: ${{ github.event.release.upload_url }}
           asset_path: ./google-sheets-hyperlink-converter-${{ github.event.release.tag_name }}.zip
