@@ -191,6 +191,13 @@ const styles = `
         color: #666;
         font-size: 14px;
     }
+    .input-example {
+        display: block;
+        margin: 5px 0;
+        color: #888;
+        font-size: 12px;
+        font-family: monospace;
+    }
     .language-group {
         display: flex;
         align-items: center;
@@ -230,8 +237,10 @@ function updateUIText() {
     // 更新侧边栏标题和其他文本
     document.querySelector('#sidebar-title').textContent = i18n[currentLang]['title'];
     document.querySelector('#input-label').textContent = i18n[currentLang]['inputLabel'];
+    document.querySelector('#input-example').textContent = i18n[currentLang]['inputExample'];
     document.querySelector('#input-url').placeholder = i18n[currentLang]['inputPlaceholder'];
     document.querySelector('#output-label').textContent = i18n[currentLang]['outputLabel'];
+    document.querySelector('#output-example').textContent = i18n[currentLang]['outputExample'];
     document.querySelector('#output-formula').placeholder = i18n[currentLang]['outputPlaceholder'];
     document.querySelector('#copy-button').textContent = i18n[currentLang]['copyButton'];
     document.querySelector('#language-label').textContent = i18n[currentLang]['language'];
@@ -266,10 +275,12 @@ async function createUI() {
             <div class="main-content">
                 <div class="input-group">
                     <label id="input-label" class="input-label">${i18n[currentLang]['inputLabel']}</label>
+                    <div id="input-example" class="input-example">${i18n[currentLang]['inputExample']}</div>
                     <textarea id="input-url" placeholder="${i18n[currentLang]['inputPlaceholder']}"></textarea>
                 </div>
                 <div class="input-group">
                     <label id="output-label" class="input-label">${i18n[currentLang]['outputLabel']}</label>
+                    <div id="output-example" class="input-example">${i18n[currentLang]['outputExample']}</div>
                     <textarea id="output-formula" placeholder="${i18n[currentLang]['outputPlaceholder']}" readonly></textarea>
                 </div>
                 <button id="copy-button">${i18n[currentLang]['copyButton']}</button>
